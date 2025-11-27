@@ -25,7 +25,7 @@ An intelligent chatbot that answers MSP360 Backup questions using RAG (Retrieval
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+### 2. Configure Environment - test
 
 ```bash
 cp .env.example .env
