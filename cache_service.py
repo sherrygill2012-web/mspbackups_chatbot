@@ -388,6 +388,9 @@ def cached_search(func):
     """
     Decorator to cache search function results.
     
+    Note: This decorator is currently unused. Caching is implemented
+    directly in QdrantTools.search_docs() for more control.
+    
     Usage:
         @cached_search
         async def search_docs(query: str, category: str = None, limit: int = 5):
@@ -395,9 +398,11 @@ def cached_search(func):
     """
     @wraps(func)
     async def wrapper(self, query: str, category: Optional[str] = None, limit: int = 5, *args, **kwargs):
-        # Skip cache if reranking is explicitly disabled (likely testing)
+        # Skip cache if reranking is disabled or bypass_cache is True
         use_reranking = kwargs.get('use_reranking', True)
-        if not use_reranking:
+        bypass_cache = kwargs.get('bypass_cache', False)
+        
+        if not use_reranking or bypass_cache:
             return await func(self, query, category, limit, *args, **kwargs)
         
         cache = get_search_cache()
