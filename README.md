@@ -2,22 +2,41 @@
 
 An intelligent chatbot that answers MSP360 Backup questions using RAG (Retrieval Augmented Generation) with documentation from help.msp360.com stored in Qdrant.
 
-## ✨ Features
+## Features
 
-- **Semantic Search**: Uses Gemini embeddings to find relevant documentation
+### Core Capabilities
+- **Semantic Search**: Uses Gemini/OpenAI embeddings to find relevant documentation
 - **Error Code Search**: Quickly find solutions for specific error codes
 - **Multiple Tools**: RAG search, error code lookup, page listing, content retrieval, category filtering
 - **Smart Responses**: Cites sources and provides step-by-step solutions
-- **Chat Interfaces**: CLI and Streamlit web UI with conversation history
-- **Comprehensive Coverage**: Backup errors, troubleshooting, configuration, best practices
+- **Multi-Provider LLM**: Supports OpenAI, Gemini, Anthropic, and Groq
 
-## 📋 Prerequisites
+### Advanced Features
+- **Query Expansion**: Multi-query retrieval for better coverage
+- **Hybrid Search**: Combines semantic search with keyword boosting
+- **Cross-Encoder Reranking**: Improved result relevance
+- **Response Caching**: Reduced latency for repeated queries
+- **Streaming Responses**: Real-time response generation
+
+### Interfaces
+- **Streamlit Web UI**: Beautiful chat interface with dark mode
+- **CLI**: Command-line interface for testing
+- **REST API**: FastAPI-based API for programmatic access
+- **Slack Bot**: Answer questions directly in Slack
+
+### Analytics & Monitoring
+- **Analytics Dashboard**: Track queries, response times, and feedback
+- **Feedback System**: Thumbs up/down for response quality tracking
+- **Cache Statistics**: Monitor cache hit rates
+- **Knowledge Gap Detection**: Identify unanswered queries
+
+## Prerequisites
 
 - Python 3.8+
 - Qdrant running with `msp360_docs` collection
-- OpenAI API key from OpenAI Platform
+- API keys for your chosen providers (OpenAI, Gemini, etc.)
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Install Dependencies
 
@@ -25,11 +44,11 @@ An intelligent chatbot that answers MSP360 Backup questions using RAG (Retrieval
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment - test
+### 2. Configure Environment
 
 ```bash
-cp .env.example .env
-# Edit .env with your GEMINI_API_KEY and other settings
+cp env_example.txt .env
+# Edit .env with your API keys and settings
 ```
 
 Required environment variables:
@@ -44,64 +63,191 @@ EMBEDDING_PROVIDER=gemini
 EMBEDDING_MODEL=models/text-embedding-004
 ```
 
-### 3. Run CLI Interface
-
-```bash
-python cli.py
-```
-
-### 4. Run Streamlit Web UI
+### 3. Run Streamlit Web UI
 
 ```bash
 streamlit run app.py
 ```
 
-## 🏗️ Architecture
+### 4. Run CLI Interface
+
+```bash
+python cli.py
+```
+
+### 5. Run REST API
+
+```bash
+uvicorn api:app --host 0.0.0.0 --port 8000
+```
+
+### 6. Run Slack Bot
+
+```bash
+python slack_bot.py
+```
+
+## Architecture
 
 ```
 User Query
     ↓
-MSP360 Expert Agent (Pydantic AI + OpenAI GPT-4o-mini)
+MSP360 Expert Agent (Pydantic AI)
+    ↓
+Query Enhancement (Multi-Query Expansion)
     ↓
 Agent Tools:
-  1. retrieve_relevant_docs() - Semantic RAG search (Gemini embeddings)
-  2. search_by_error_code() - Search by error code
-  3. list_documentation_pages() - Browse available docs
-  4. get_page_content() - Retrieve full page by URL
-  5. get_available_categories() - List all categories
+  1. retrieve_relevant_docs() - Semantic RAG search
+  2. enhanced_multi_query_search() - Multi-query retrieval
+  3. search_by_error_code() - Error code lookup
+  4. list_documentation_pages() - Browse available docs
+  5. get_page_content() - Retrieve full page by URL
+  6. get_available_categories() - List all categories
+  7. search_related_topics() - Find related documentation
     ↓
-Qdrant (msp360_docs collection with Gemini embeddings)
+Qdrant (with hybrid search + reranking)
     ↓
-OpenAI GPT-4o-mini LLM Response → Structured Answer with Citations
+Caching Layer (embeddings + search results)
+    ↓
+LLM Response → Structured Answer with Citations
 ```
 
-## 💬 Usage Examples
+## API Reference
 
-### CLI Interface
+### REST API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/chat` | POST | Send chat message |
+| `/chat/stream` | POST | Stream chat response |
+| `/search` | POST | Search documentation |
+| `/error-code` | POST | Look up error code |
+| `/categories` | GET | List categories |
+| `/feedback` | POST | Submit feedback |
+| `/cache/stats` | GET | Cache statistics |
+| `/cache/clear` | POST | Clear caches |
+
+### Example API Usage
+
+```python
+import requests
+
+# Chat endpoint
+response = requests.post(
+    "http://localhost:8000/chat",
+    json={"query": "How to fix error code 1531?"}
+)
+print(response.json()["response"])
+
+# Search endpoint
+response = requests.post(
+    "http://localhost:8000/search",
+    json={"query": "VSS backup", "limit": 5}
+)
+for result in response.json()["results"]:
+    print(f"- {result['title']}: {result['url']}")
+```
+
+## Project Structure
+
+```
+mspbackups_chatbot/
+├── app.py                  # Streamlit web interface
+├── cli.py                  # Command-line interface
+├── api.py                  # FastAPI REST API
+├── msp_expert.py          # Pydantic AI agent with tools
+├── qdrant_tools.py        # Qdrant search utilities
+├── embedding_service.py   # Embeddings wrapper with caching
+├── cache_service.py       # Caching layer (embeddings + search)
+├── analytics.py           # Analytics tracking service
+├── slack_bot.py           # Slack bot integration
+├── image_processor.py     # Multi-modal image processing
+├── ingest.py              # Document ingestion pipeline
+├── pages/
+│   └── 1_Analytics_Dashboard.py  # Streamlit analytics page
+├── requirements.txt       # Python dependencies
+├── Dockerfile            # Docker container
+├── docker-entrypoint.sh  # Docker entrypoint
+├── env_example.txt       # Environment template
+└── README.md             # This file
+```
+
+## Docker Deployment
+
+### Build Image
 
 ```bash
-$ python cli.py
-
-💾 MSP360 Backup Expert Assistant - CLI
-
-💬 You: How to fix error code 1531?
-
-🤖 Assistant: Error code 1531 occurs when synthetic full backup is not supported...
-[Detailed explanation with solution and source URLs]
-
-💬 You: What is Forever Forward Incremental backup?
-
-🤖 Assistant: Forever Forward Incremental is a backup mechanism...
+docker build -t msp360-chatbot .
 ```
 
-### Streamlit Web UI
+### Run Streamlit (default)
 
-1. Start the app: `streamlit run app.py`
-2. Open your browser (usually http://localhost:8501)
-3. Type your question in the chat input
-4. Get instant answers with documentation sources
+```bash
+docker run -p 8501:8501 --env-file .env msp360-chatbot
+```
 
-### Example Questions
+### Run API Server
+
+```bash
+docker run -p 8000:8000 --env-file .env -e RUN_MODE=api msp360-chatbot
+```
+
+### Run Slack Bot
+
+```bash
+docker run --env-file .env -e RUN_MODE=slack msp360-chatbot
+```
+
+## Kubernetes Deployment
+
+See the `k8s/` directory for Kubernetes manifests:
+- `deployment.yaml` - Main deployment
+- `service.yaml` - Service configuration
+- `configmap.yaml` - Configuration
+- `secret.yaml` - Secrets (API keys)
+- `argocd-application.yaml` - ArgoCD application
+
+## Document Ingestion
+
+To update the documentation index:
+
+```bash
+# Scrape and index documentation
+python ingest.py --max-pages 500
+
+# Recreate collection from scratch
+python ingest.py --recreate --max-pages 500
+
+# Start from specific URLs
+python ingest.py --urls https://help.msp360.com/backup/errors
+```
+
+## Configuration Options
+
+### Caching
+
+```bash
+EMBEDDING_CACHE_SIZE=5000      # Max cached embeddings
+EMBEDDING_CACHE_TTL=86400      # Cache TTL (24 hours)
+SEARCH_CACHE_SIZE=1000         # Max cached searches
+SEARCH_CACHE_TTL=1800          # Cache TTL (30 minutes)
+```
+
+### Rate Limiting (API)
+
+```bash
+RATE_LIMIT_REQUESTS=60         # Requests per window
+RATE_LIMIT_WINDOW=60           # Window in seconds
+```
+
+### Analytics
+
+```bash
+ANALYTICS_PERSIST_PATH=analytics_data.json
+```
+
+## Example Questions
 
 - "How to fix error code 1531?"
 - "What is synthetic full backup?"
@@ -112,131 +258,43 @@ $ python cli.py
 - "Explain backup retention policy"
 - "Fix I/O error code 1076"
 
-## 🛠️ Technical Details
-
-### Agent Tools
-
-1. **retrieve_relevant_docs(query, category, limit)**
-   - Semantic search across all documentation
-   - Optional category filtering
-   - Returns top N relevant results
-
-2. **search_by_error_code(error_code)**
-   - Precise lookup by error code
-   - Automatically cleans input (handles "code 1531", "1531", "error 1531")
-   - Returns exact matches
-
-3. **list_documentation_pages(category)**
-   - Browse available documentation
-   - Optional category filtering
-   - Returns list of page URLs with titles
-
-4. **get_page_content(url)**
-   - Retrieve full page content
-   - Returns complete documentation for specific URL
-
-5. **get_available_categories()**
-   - List all documentation categories
-   - Helpful for exploration
-
-### Data Model
-
-The `msp360_docs` Qdrant collection uses the following metadata structure:
-
-```python
-{
-    "url": str,          # Documentation URL
-    "title": str,        # Page title
-    "text": str,         # Full page content
-    "category": str,     # Category (Backup, Restore, Errors, etc.)
-    "error_code": str    # Error code if applicable (e.g., "1531")
-}
-```
-
-### Configuration Options
-
-Edit `.env` to customize:
-
-- `OPENAI_API_KEY`: Your OpenAI API key (required)
-- `GEMINI_API_KEY`: Optional, for embeddings (uses OpenAI embeddings if not set)
-- `QDRANT_URL`: Qdrant server URL (default: http://localhost:6333)
-- `COLLECTION_NAME`: Collection name (default: msp360_docs)
-- `LLM_PROVIDER`: LLM provider (default: openai; supports gemini/openai/anthropic/groq)
-- `LLM_MODEL`: Model name (default: gpt-4o-mini)
-- `EMBEDDING_MODEL`: Embedding model (default: text-embedding-3-small)
-
-## 📚 Documentation Categories
-
-- **Backup**: Backup-related documentation and troubleshooting
-- **Restore**: Restore procedures and issues
-- **Errors**: Specific error codes and solutions
-- **Warnings**: Warning messages and their meanings
-- **Cloud Vendors**: Cloud storage provider configurations
-- **Best Practices**: Backup strategy recommendations
-- **Troubleshooting**: General troubleshooting guides
-
-## 🔧 Development
-
-### Project Structure
-
-```
-mspbackups_chatbot/
-├── app.py                  # Streamlit web interface
-├── cli.py                  # Command-line interface
-├── msp_expert.py          # Pydantic AI agent with tools
-├── qdrant_tools.py        # Qdrant search utilities
-├── embedding_service.py   # Gemini embeddings wrapper
-├── requirements.txt       # Python dependencies
-├── .env.example          # Environment template
-└── README.md             # This file
-```
-
-### Running Tests
-
-```bash
-# Test CLI
-python cli.py
-
-# Test Streamlit
-streamlit run app.py
-
-# Test individual components
-python -c "from msp_expert import create_msp_expert; print('✓ Import successful')"
-```
-
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Agent fails to initialize
 
-- Check that `OPENAI_API_KEY` is set in `.env`
+- Check that required API keys are set in `.env`
 - Verify Qdrant is running: `curl http://localhost:6333`
 - Confirm `msp360_docs` collection exists in Qdrant
 
 ### No results found
 
-- Ensure the `msp360_docs` collection has data
+- Ensure the collection has data
 - Check collection name matches in `.env`
-- Verify embeddings were generated correctly during data ingestion
+- Verify embeddings model matches the indexed documents
+
+### Slow responses
+
+- Enable caching (enabled by default)
+- Check Qdrant performance
+- Consider reducing `limit` parameter
 
 ### Import errors
 
 - Install all dependencies: `pip install -r requirements.txt`
 - Use Python 3.8 or higher
-- Check for conflicting package versions
 
-## 📝 License
+## License
 
 This project is created for MSP360 Backup documentation assistance.
 
-## 🤝 Contributing
+## Contributing
 
 For questions or issues, please contact the development team.
 
-## 📖 Resources
+## Resources
 
 - [MSP360 Documentation](https://help.msp360.com)
 - [MSP360 Knowledge Base](https://kb.msp360.com)
 - [Pydantic AI Documentation](https://ai.pydantic.dev)
 - [Qdrant Documentation](https://qdrant.tech/documentation)
-- [Gemini API](https://ai.google.dev)
-
+- [FastAPI Documentation](https://fastapi.tiangolo.com)

@@ -21,13 +21,25 @@ RUN pip install --no-cache-dir \
 
 # Copy application code
 COPY *.py ./
+COPY pages/ pages/
 COPY .streamlit/ .streamlit/
 
-# Expose Streamlit port
-EXPOSE 8501
+# Create directories for persistence
+RUN mkdir -p /app/data
 
-# Health check
+# Expose ports (Streamlit and API)
+EXPOSE 8501 8000
+
+# Health check for Streamlit
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
-# Run Streamlit
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Default to Streamlit, can be overridden
+# To run API: docker run -e RUN_MODE=api ...
+# To run Slack bot: docker run -e RUN_MODE=slack ...
+ENV RUN_MODE=streamlit
+
+# Entrypoint script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

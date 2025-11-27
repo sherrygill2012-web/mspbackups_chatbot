@@ -1,4 +1,9 @@
 # Copy this content to .env file
+# MSP360 Backup Expert Chatbot Configuration
+
+# =============================================================================
+# REQUIRED API KEYS
+# =============================================================================
 
 # OpenAI API Key (required for LLM)
 # Get from: https://platform.openai.com/api-keys
@@ -8,16 +13,92 @@ OPENAI_API_KEY=your_openai_api_key_here
 # Get from: https://makersuite.google.com/app/apikey
 GEMINI_API_KEY=your_gemini_api_key_here
 
-# Qdrant Configuration
+# =============================================================================
+# QDRANT CONFIGURATION
+# =============================================================================
+
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=
 COLLECTION_NAME=msp360_docs
 
-# LLM Configuration (using OpenAI)
+# =============================================================================
+# LLM CONFIGURATION
+# =============================================================================
+
+# Supported providers: openai, gemini, anthropic, groq
 LLM_PROVIDER=openai
 LLM_MODEL=gpt-4o-mini
 
-# Embedding Configuration (using Gemini to match existing collection)
+# =============================================================================
+# EMBEDDING CONFIGURATION
+# =============================================================================
+
+# Supported providers: openai, gemini
 EMBEDDING_PROVIDER=gemini
 EMBEDDING_MODEL=models/text-embedding-004
 
+# =============================================================================
+# CACHING CONFIGURATION
+# =============================================================================
+
+# Embedding cache settings
+EMBEDDING_CACHE_SIZE=5000
+EMBEDDING_CACHE_TTL=86400
+
+# Search result cache settings
+SEARCH_CACHE_SIZE=1000
+SEARCH_CACHE_TTL=1800
+
+# =============================================================================
+# REST API CONFIGURATION
+# =============================================================================
+
+# API server settings
+API_HOST=0.0.0.0
+API_PORT=8000
+API_RELOAD=false
+
+# Optional API key for authentication (leave empty for no auth)
+API_KEY=
+
+# Rate limiting
+RATE_LIMIT_REQUESTS=60
+RATE_LIMIT_WINDOW=60
+
+# CORS origins (comma-separated)
+CORS_ORIGINS=*
+
+# =============================================================================
+# ANALYTICS CONFIGURATION
+# =============================================================================
+
+# Path to persist analytics data (JSON file)
+ANALYTICS_PERSIST_PATH=analytics_data.json
+
+# =============================================================================
+# SLACK INTEGRATION (Optional)
+# =============================================================================
+
+# To enable Slack integration:
+# 1. Create a Slack app at https://api.slack.com/apps
+# 2. Enable Socket Mode and generate an App-Level Token
+# 3. Add OAuth scopes: app_mentions:read, chat:write, im:history, commands
+# 4. Install the app to your workspace
+
+SLACK_BOT_TOKEN=xoxb-your-bot-token
+SLACK_APP_TOKEN=xapp-your-app-token
+
+# =============================================================================
+# VISION / MULTI-MODAL CONFIGURATION (Optional)
+# =============================================================================
+
+# Vision model provider (uses LLM_PROVIDER if not set)
+VISION_PROVIDER=openai
+VISION_MODEL=gpt-4o
+
+# =============================================================================
+# DOCKER / DEPLOYMENT CONFIGURATION
+# =============================================================================
+
+# Run mode for Docker (streamlit, api, or slack)
+RUN_MODE=streamlit

@@ -1,6 +1,6 @@
 """
 Embedding Service
-Wrapper for generating embeddings using OpenAI or Gemini API
+Wrapper for generating embeddings using OpenAI or Gemini API with caching support
 """
 
 import os
@@ -9,17 +9,20 @@ from typing import List
 from functools import partial
 from dotenv import load_dotenv
 
+from cache_service import get_embedding_cache
+
 load_dotenv()
 
 
 class EmbeddingService:
-    """Service for generating text embeddings using OpenAI or Gemini"""
+    """Service for generating text embeddings using OpenAI or Gemini with caching"""
     
     def __init__(
         self,
         api_key: str = None,
         model: str = None,
-        provider: str = None
+        provider: str = None,
+        use_cache: bool = True
     ):
         """
         Initialize the embedding service.
@@ -28,8 +31,11 @@ class EmbeddingService:
             api_key: API key (defaults to env var based on provider)
             model: Embedding model name (defaults based on provider)
             provider: Embedding provider (openai or gemini, defaults to openai)
+            use_cache: Whether to use embedding cache (default True)
         """
         self.provider = (provider or os.getenv("EMBEDDING_PROVIDER", "openai")).lower()
+        self.use_cache = use_cache
+        self._cache = get_embedding_cache() if use_cache else None
         
         if self.provider == "openai":
             from openai import AsyncOpenAI
@@ -63,7 +69,7 @@ class EmbeddingService:
         task_type: str = "retrieval_query"
     ) -> List[float]:
         """
-        Generate embedding for text.
+        Generate embedding for text with caching.
         
         Args:
             text: Text to embed
@@ -72,6 +78,12 @@ class EmbeddingService:
         Returns:
             Embedding vector
         """
+        # Check cache first
+        if self._cache:
+            cached = self._cache.get(text, self.model)
+            if cached is not None:
+                return cached
+        
         try:
             if self.provider == "openai":
                 # OpenAI embeddings
@@ -79,7 +91,7 @@ class EmbeddingService:
                     model=self.model,
                     input=text
                 )
-                return response.data[0].embedding
+                embedding = response.data[0].embedding
             else:
                 # Gemini embeddings
                 import google.generativeai as genai
@@ -91,7 +103,14 @@ class EmbeddingService:
                     task_type=task_type
                 )
                 result = await loop.run_in_executor(None, func)
-                return result['embedding']
+                embedding = result['embedding']
+            
+            # Cache the result
+            if self._cache:
+                self._cache.set(text, embedding, self.model)
+            
+            return embedding
+            
         except Exception as e:
             print(f"Error generating embedding: {e}")
             raise
@@ -102,7 +121,7 @@ class EmbeddingService:
         task_type: str = "retrieval_query"
     ) -> List[float]:
         """
-        Synchronous version of generate_embedding.
+        Synchronous version of generate_embedding with caching.
         
         Args:
             text: Text to embed
@@ -111,6 +130,12 @@ class EmbeddingService:
         Returns:
             Embedding vector
         """
+        # Check cache first
+        if self._cache:
+            cached = self._cache.get(text, self.model)
+            if cached is not None:
+                return cached
+        
         try:
             if self.provider == "openai":
                 from openai import OpenAI
@@ -119,7 +144,7 @@ class EmbeddingService:
                     model=self.model,
                     input=text
                 )
-                return response.data[0].embedding
+                embedding = response.data[0].embedding
             else:
                 import google.generativeai as genai
                 result = genai.embed_content(
@@ -127,7 +152,14 @@ class EmbeddingService:
                     content=text,
                     task_type=task_type
                 )
-                return result['embedding']
+                embedding = result['embedding']
+            
+            # Cache the result
+            if self._cache:
+                self._cache.set(text, embedding, self.model)
+            
+            return embedding
+            
         except Exception as e:
             print(f"Error generating embedding: {e}")
             raise
@@ -138,7 +170,7 @@ class EmbeddingService:
         task_type: str = "retrieval_query"
     ) -> List[List[float]]:
         """
-        Generate embeddings for multiple texts.
+        Generate embeddings for multiple texts with caching.
         
         Args:
             texts: List of texts to embed
@@ -148,9 +180,25 @@ class EmbeddingService:
             List of embedding vectors
         """
         embeddings = []
-        for text in texts:
+        uncached_texts = []
+        uncached_indices = []
+        
+        # Check cache for each text
+        for i, text in enumerate(texts):
+            if self._cache:
+                cached = self._cache.get(text, self.model)
+                if cached is not None:
+                    embeddings.append(cached)
+                    continue
+            uncached_texts.append(text)
+            uncached_indices.append(i)
+            embeddings.append(None)  # Placeholder
+        
+        # Generate embeddings for uncached texts
+        for i, text in zip(uncached_indices, uncached_texts):
             embedding = await self.generate_embedding(text, task_type)
-            embeddings.append(embedding)
+            embeddings[i] = embedding
+        
         return embeddings
     
     def get_embedding_dimension(self) -> int:
@@ -161,6 +209,12 @@ class EmbeddingService:
             Embedding dimension
         """
         return self.dimension
+    
+    def get_cache_stats(self) -> dict:
+        """Get cache statistics"""
+        if self._cache:
+            return self._cache.get_stats()
+        return {"caching_disabled": True}
 
 
 # Convenience function for quick usage
@@ -177,4 +231,3 @@ async def get_embedding(text: str, task_type: str = "retrieval_query") -> List[f
     """
     service = EmbeddingService()
     return await service.generate_embedding(text, task_type)
-

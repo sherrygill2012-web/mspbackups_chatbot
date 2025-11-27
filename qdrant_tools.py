@@ -1,6 +1,6 @@
 """
 Qdrant Tools for MSP360 Documentation Search
-Functions for searching and retrieving documentation from Qdrant
+Functions for searching and retrieving documentation from Qdrant with caching
 """
 
 import os
@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from sentence_transformers import CrossEncoder
 
 from embedding_service import EmbeddingService
+from cache_service import get_search_cache
 
 load_dotenv()
 
@@ -32,14 +33,15 @@ STOPWORDS = {
 
 
 class QdrantTools:
-    """Tools for interacting with Qdrant vector database"""
+    """Tools for interacting with Qdrant vector database with caching"""
     
     def __init__(
         self,
         url: str = None,
         api_key: str = None,
         collection_name: str = None,
-        embedding_service: EmbeddingService = None
+        embedding_service: EmbeddingService = None,
+        use_cache: bool = True
     ):
         """
         Initialize Qdrant tools.
@@ -49,10 +51,13 @@ class QdrantTools:
             api_key: Qdrant API key (defaults to env var)
             collection_name: Collection name (defaults to msp360_docs)
             embedding_service: Embedding service instance
+            use_cache: Whether to use search result caching (default True)
         """
         self.url = url or os.getenv("QDRANT_URL", "http://localhost:6333")
         self.api_key = api_key or os.getenv("QDRANT_API_KEY")
         self.collection_name = collection_name or os.getenv("COLLECTION_NAME", "msp360_docs")
+        self.use_cache = use_cache
+        self._cache = get_search_cache() if use_cache else None
         
         # Use prefer_grpc=False to avoid gRPC event loop issues
         self.client = QdrantClient(
@@ -162,10 +167,11 @@ class QdrantTools:
         query: str,
         category: Optional[str] = None,
         limit: int = 5,
-        use_reranking: bool = True
+        use_reranking: bool = True,
+        bypass_cache: bool = False
     ) -> List[Dict]:
         """
-        Search documentation using semantic similarity with hybrid search and reranking.
+        Search documentation using semantic similarity with hybrid search, reranking, and caching.
         
         Uses a three-stage pipeline:
         1. Semantic search via embeddings (fetches 2x limit for reranking)
@@ -177,10 +183,17 @@ class QdrantTools:
             category: Filter by category (optional)
             limit: Number of results to return
             use_reranking: Whether to apply cross-encoder reranking (default True)
+            bypass_cache: Whether to bypass the cache (default False)
         
         Returns:
             List of matching documents with metadata, sorted by relevance
         """
+        # Check cache first (only if reranking enabled and cache not bypassed)
+        if self._cache and use_reranking and not bypass_cache:
+            cached = self._cache.get(query, category, limit)
+            if cached is not None:
+                return cached
+        
         # Generate query embedding
         query_embedding = await self.embedding_service.generate_embedding(
             query,
@@ -226,6 +239,10 @@ class QdrantTools:
                 key=lambda x: x.get("hybrid_score", x["score"]),
                 reverse=True
             )[:limit]
+        
+        # Cache the results
+        if self._cache and use_reranking and not bypass_cache:
+            self._cache.set(query, formatted_results, category, limit)
         
         return formatted_results
     
@@ -370,6 +387,12 @@ class QdrantTools:
         
         categories = list(set([r.payload.get("category") for r in results if r.payload.get("category")]))
         return sorted(categories)
+    
+    def get_cache_stats(self) -> dict:
+        """Get cache statistics"""
+        if self._cache:
+            return self._cache.get_stats()
+        return {"caching_disabled": True}
 
 
 # Convenience functions
@@ -427,4 +450,3 @@ def format_search_results(results: List[Dict]) -> str:
 """)
     
     return "\n".join(formatted)
-

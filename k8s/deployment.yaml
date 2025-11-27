@@ -17,7 +17,9 @@ spec:
     spec:
       containers:
       - name: chatbot
-        image: ghcr.io/sherrygill2012-web/msp360-chatbot:master
+        # Update this to match your GitHub repository path
+        # Format: ghcr.io/OWNER/REPO:TAG
+        image: ghcr.io/gillm/mspbackups_chatbot:latest
         ports:
         - containerPort: 8501
         envFrom:
