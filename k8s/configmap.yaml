@@ -4,11 +4,13 @@ metadata:
   name: msp360-chatbot-config
   namespace: msp360
 data:
-  QDRANT_URL: "http://qdrant.default.svc.cluster.local:80"
+  # Qdrant is in the n8n namespace on port 80
+  QDRANT_URL: "http://qdrant.n8n.svc.cluster.local:80"
   COLLECTION_NAME: "msp360_docs"
   LLM_PROVIDER: "openai"
   LLM_MODEL: "gpt-4o-mini"
   EMBEDDING_PROVIDER: "gemini"
   EMBEDDING_MODEL: "models/text-embedding-004"
-
-
+  # Redis cache configuration
+  CACHE_BACKEND: "redis"
+  REDIS_URL: "redis://192.168.1.146:6379"

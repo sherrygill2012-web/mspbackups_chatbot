@@ -1,6 +1,7 @@
 """
 Cache Service for MSP360 RAG Chatbot
 Provides caching for embeddings and search results to reduce latency and API costs
+Supports both in-memory and Redis backends
 """
 
 import os
@@ -15,6 +16,13 @@ import threading
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Check if Redis is available
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
 
 
 @dataclass
@@ -32,6 +40,176 @@ class CacheEntry:
     def touch(self):
         """Update hit count"""
         self.hit_count += 1
+
+
+class RedisCache:
+    """
+    Redis-based cache with TTL support.
+    Provides persistent caching across restarts.
+    """
+    
+    def __init__(
+        self,
+        url: str = None,
+        prefix: str = "msp360",
+        default_ttl: float = 3600,  # 1 hour default
+        max_size: int = None  # Not used for Redis, included for interface compatibility
+    ):
+        """
+        Initialize Redis cache.
+        
+        Args:
+            url: Redis URL (e.g., redis://192.168.1.146:6379)
+            prefix: Key prefix for namespacing
+            default_ttl: Default time-to-live in seconds
+            max_size: Not used (Redis handles eviction)
+        """
+        if not REDIS_AVAILABLE:
+            raise ImportError("redis package required. Install with: pip install redis")
+        
+        self.url = url or os.getenv("REDIS_URL", "redis://localhost:6379")
+        self.prefix = prefix
+        self.default_ttl = default_ttl
+        self.max_size = max_size  # For interface compatibility
+        
+        # Parse URL and connect
+        self.client = redis.from_url(
+            self.url,
+            decode_responses=False,  # We handle encoding ourselves
+            socket_timeout=5,
+            socket_connect_timeout=5
+        )
+        
+        # Test connection
+        try:
+            self.client.ping()
+            self._connected = True
+        except redis.ConnectionError as e:
+            print(f"Warning: Redis connection failed: {e}")
+            self._connected = False
+        
+        # Local stats (Redis doesn't track these)
+        self.stats = {
+            "hits": 0,
+            "misses": 0,
+            "evictions": 0,
+            "expirations": 0
+        }
+    
+    def _make_key(self, key: str) -> str:
+        """Create namespaced key"""
+        return f"{self.prefix}:{key}"
+    
+    def get(self, key: str) -> Optional[Any]:
+        """
+        Get value from cache.
+        
+        Args:
+            key: Cache key
+            
+        Returns:
+            Cached value or None if not found/expired
+        """
+        if not self._connected:
+            self.stats["misses"] += 1
+            return None
+        
+        try:
+            full_key = self._make_key(key)
+            data = self.client.get(full_key)
+            
+            if data is None:
+                self.stats["misses"] += 1
+                return None
+            
+            self.stats["hits"] += 1
+            return json.loads(data)
+            
+        except Exception as e:
+            print(f"Redis get error: {e}")
+            self.stats["misses"] += 1
+            return None
+    
+    def set(self, key: str, value: Any, ttl: Optional[float] = None):
+        """
+        Set value in cache.
+        
+        Args:
+            key: Cache key
+            value: Value to cache
+            ttl: Time-to-live in seconds (uses default if not specified)
+        """
+        if not self._connected:
+            return
+        
+        try:
+            full_key = self._make_key(key)
+            ttl_seconds = int(ttl or self.default_ttl)
+            data = json.dumps(value)
+            self.client.setex(full_key, ttl_seconds, data)
+        except Exception as e:
+            print(f"Redis set error: {e}")
+    
+    def delete(self, key: str) -> bool:
+        """
+        Delete entry from cache.
+        
+        Args:
+            key: Cache key
+            
+        Returns:
+            True if entry was deleted, False if not found
+        """
+        if not self._connected:
+            return False
+        
+        try:
+            full_key = self._make_key(key)
+            return self.client.delete(full_key) > 0
+        except Exception as e:
+            print(f"Redis delete error: {e}")
+            return False
+    
+    def clear(self):
+        """Clear all cache entries with our prefix"""
+        if not self._connected:
+            return
+        
+        try:
+            pattern = f"{self.prefix}:*"
+            cursor = 0
+            while True:
+                cursor, keys = self.client.scan(cursor, match=pattern, count=100)
+                if keys:
+                    self.client.delete(*keys)
+                if cursor == 0:
+                    break
+        except Exception as e:
+            print(f"Redis clear error: {e}")
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get cache statistics"""
+        total = self.stats["hits"] + self.stats["misses"]
+        hit_rate = self.stats["hits"] / total if total > 0 else 0
+        
+        # Try to get Redis info
+        size = 0
+        if self._connected:
+            try:
+                pattern = f"{self.prefix}:*"
+                cursor, keys = self.client.scan(0, match=pattern, count=1000)
+                size = len(keys)
+            except:
+                pass
+        
+        return {
+            **self.stats,
+            "size": size,
+            "backend": "redis",
+            "connected": self._connected,
+            "url": self.url.split("@")[-1] if "@" in self.url else self.url,  # Hide password
+            "hit_rate": f"{hit_rate:.2%}"
+        }
 
 
 class InMemoryCache:
@@ -184,8 +362,48 @@ class InMemoryCache:
                 **self.stats,
                 "size": len(self._cache),
                 "max_size": self.max_size,
+                "backend": "memory",
                 "hit_rate": f"{hit_rate:.2%}"
             }
+
+
+def create_cache(
+    cache_type: str = None,
+    redis_url: str = None,
+    prefix: str = "msp360",
+    max_size: int = 1000,
+    default_ttl: float = 3600
+):
+    """
+    Factory function to create appropriate cache backend.
+    
+    Args:
+        cache_type: "redis" or "memory" (auto-detects if not specified)
+        redis_url: Redis URL for Redis backend
+        prefix: Key prefix for Redis
+        max_size: Max size for in-memory cache
+        default_ttl: Default TTL in seconds
+    
+    Returns:
+        Cache instance (RedisCache or InMemoryCache)
+    """
+    cache_type = cache_type or os.getenv("CACHE_BACKEND", "auto")
+    redis_url = redis_url or os.getenv("REDIS_URL")
+    
+    # Auto-detect: use Redis if URL is provided and redis package is available
+    if cache_type == "auto":
+        if redis_url and REDIS_AVAILABLE:
+            cache_type = "redis"
+        else:
+            cache_type = "memory"
+    
+    if cache_type == "redis":
+        if not REDIS_AVAILABLE:
+            print("Warning: Redis requested but not available, falling back to memory")
+            return InMemoryCache(max_size=max_size, default_ttl=default_ttl)
+        return RedisCache(url=redis_url, prefix=prefix, default_ttl=default_ttl)
+    
+    return InMemoryCache(max_size=max_size, default_ttl=default_ttl)
 
 
 class EmbeddingCache:
@@ -206,7 +424,11 @@ class EmbeddingCache:
             max_size: Maximum number of cached embeddings
             ttl: Time-to-live for embeddings
         """
-        self.cache = InMemoryCache(max_size=max_size, default_ttl=ttl)
+        self.cache = create_cache(
+            prefix="msp360:emb",
+            max_size=max_size,
+            default_ttl=ttl
+        )
     
     def _hash_text(self, text: str, model: str = "") -> str:
         """Generate hash for text content"""
@@ -262,7 +484,11 @@ class SearchResultCache:
             max_size: Maximum number of cached searches
             ttl: Time-to-live for search results
         """
-        self.cache = InMemoryCache(max_size=max_size, default_ttl=ttl)
+        self.cache = create_cache(
+            prefix="msp360:search",
+            max_size=max_size,
+            default_ttl=ttl
+        )
     
     def _generate_key(
         self,
@@ -432,4 +658,3 @@ def clear_all_caches():
     """Clear all caches"""
     get_embedding_cache().cache.clear()
     get_search_cache().cache.clear()
-

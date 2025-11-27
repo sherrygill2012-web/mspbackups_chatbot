@@ -41,6 +41,13 @@ EMBEDDING_MODEL=models/text-embedding-004
 # CACHING CONFIGURATION
 # =============================================================================
 
+# Cache backend: "redis", "memory", or "auto" (auto-detects based on REDIS_URL)
+CACHE_BACKEND=auto
+
+# Redis configuration (optional - uses in-memory cache if not set)
+# Format: redis://[password@]host:port[/db]
+REDIS_URL=redis://192.168.1.146:6379
+
 # Embedding cache settings
 EMBEDDING_CACHE_SIZE=5000
 EMBEDDING_CACHE_TTL=86400
