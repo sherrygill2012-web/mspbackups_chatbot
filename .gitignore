@@ -1,0 +1,90 @@
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.env
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Credentials and authentication files
+# Allow k8s/secret.yaml template (must come before *secrets* pattern)
+!k8s/secret.yaml
+*credentials*
+*secrets*
+*password*
+*.passwd
+config.ini
+settings.ini
+secrets.json
+credentials.json
+
+# Database connection strings (if any)
+*db*.conf
+*db*.config
+*.db.url
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+=2.2.0
+
+# Kubernetes secrets (if you have local secret files with actual values)
+# Note: k8s/secret.yaml is tracked as it's a template with empty values
+# Allow the template file first
+!k8s/secret.yaml
+# Then ignore other secret files
+*secret*.local.yaml
+*secret*.local.yml
+*secrets*.yaml
+*secrets*.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
