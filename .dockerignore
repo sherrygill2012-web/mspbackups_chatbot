@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.git/
+*.md
+*.txt
+!requirements.txt
+k8s/
+.github/
+*.plan.md
+
+

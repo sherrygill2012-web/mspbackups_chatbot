@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: msp360-chatbot
+  namespace: msp360
+  labels:
+    app: msp360-chatbot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: msp360-chatbot
+  template:
+    metadata:
+      labels:
+        app: msp360-chatbot
+    spec:
+      containers:
+      - name: chatbot
+        image: ghcr.io/sherrygill2012-web/msp360-chatbot:latest
+        ports:
+        - containerPort: 8501
+        envFrom:
+        - configMapRef:
+            name: msp360-chatbot-config
+        - secretRef:
+            name: msp360-chatbot-secrets
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /_stcore/health
+            port: 8501
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /_stcore/health
+            port: 8501
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      imagePullSecrets:
+      - name: ghcr-secret  # Only needed if GHCR repo is private
+
+

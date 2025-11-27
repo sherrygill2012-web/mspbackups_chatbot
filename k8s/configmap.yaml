@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: msp360-chatbot-config
+  namespace: msp360
+data:
+  QDRANT_URL: "http://qdrant.default.svc.cluster.local:80"
+  COLLECTION_NAME: "msp360_docs"
+  LLM_PROVIDER: "openai"
+  LLM_MODEL: "gpt-4o-mini"
+  EMBEDDING_PROVIDER: "gemini"
+  EMBEDDING_MODEL: "models/text-embedding-004"
+
+
