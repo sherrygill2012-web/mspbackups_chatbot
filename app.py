@@ -20,6 +20,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Version info for testing CI/CD pipeline
+VERSION = "v1.0.1-test"
+
 # Custom CSS
 st.markdown("""
 <style>

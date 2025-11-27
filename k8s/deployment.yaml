@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: chatbot
-        image: ghcr.io/sherrygill2012-web/msp360-chatbot:latest
+        image: ghcr.io/sherrygill2012-web/msp360-chatbot:master
         ports:
         - containerPort: 8501
         envFrom:
