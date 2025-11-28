@@ -375,34 +375,20 @@ def create_cache(
     default_ttl: float = 3600
 ):
     """
-    Factory function to create appropriate cache backend.
+    Factory function to create cache backend.
+    Always uses in-memory cache for speed (no Redis connection overhead).
     
     Args:
-        cache_type: "redis" or "memory" (auto-detects if not specified)
-        redis_url: Redis URL for Redis backend
-        prefix: Key prefix for Redis
+        cache_type: Ignored - always uses memory
+        redis_url: Ignored - always uses memory
+        prefix: Ignored - always uses memory
         max_size: Max size for in-memory cache
         default_ttl: Default TTL in seconds
     
     Returns:
-        Cache instance (RedisCache or InMemoryCache)
+        InMemoryCache instance
     """
-    cache_type = cache_type or os.getenv("CACHE_BACKEND", "auto")
-    redis_url = redis_url or os.getenv("REDIS_URL")
-    
-    # Auto-detect: use Redis if URL is provided and redis package is available
-    if cache_type == "auto":
-        if redis_url and REDIS_AVAILABLE:
-            cache_type = "redis"
-        else:
-            cache_type = "memory"
-    
-    if cache_type == "redis":
-        if not REDIS_AVAILABLE:
-            print("Warning: Redis requested but not available, falling back to memory")
-            return InMemoryCache(max_size=max_size, default_ttl=default_ttl)
-        return RedisCache(url=redis_url, prefix=prefix, default_ttl=default_ttl)
-    
+    # Always use in-memory for speed - avoids Redis connection overhead
     return InMemoryCache(max_size=max_size, default_ttl=default_ttl)
 
 

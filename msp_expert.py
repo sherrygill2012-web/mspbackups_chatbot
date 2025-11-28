@@ -5,9 +5,8 @@ Enhanced with query expansion and multi-query retrieval
 """
 
 import os
-import re
 from dataclasses import dataclass
-from typing import Optional, List, Dict
+from typing import Optional, List
 from dotenv import load_dotenv
 
 from pydantic_ai import Agent, RunContext
@@ -91,7 +90,6 @@ For further reading, you can refer to the documentation using the following link
 
 Guidelines:
 - If user mentions an error code (e.g., "code 1531"), use search_by_error_code for precise results
-- For complex questions, consider using enhanced_multi_query_search for better coverage
 - Provide step-by-step solutions when troubleshooting
 - Explain technical concepts clearly using the documentation
 - Include code examples or configuration snippets from docs when relevant
@@ -129,127 +127,6 @@ msp_expert = Agent(
     deps_type=MSPDeps,
     retries=2
 )
-
-
-def extract_key_terms(query: str) -> List[str]:
-    """Extract key technical terms from a query for expansion"""
-    # Common MSP360/backup-related terms to preserve
-    technical_terms = {
-        'vss', 'synthetic', 'incremental', 'gfs', 'retention', 'compression',
-        'encryption', 'dedupe', 'deduplication', 's3', 'azure', 'wasabi',
-        'backblaze', 'google cloud', 'aws', 'restore', 'backup', 'schedule',
-        'policy', 'plan', 'agent', 'console', 'web console', 'mbs', 'cbb',
-        'image', 'file-level', 'block-level', 'snapshot', 'cbfs', 'driver'
-    }
-    
-    query_lower = query.lower()
-    found_terms = []
-    
-    for term in technical_terms:
-        if term in query_lower:
-            found_terms.append(term)
-    
-    # Extract error codes
-    error_codes = re.findall(r'\b\d{3,4}\b', query)
-    found_terms.extend(error_codes)
-    
-    return found_terms
-
-
-def generate_query_variations(query: str) -> List[str]:
-    """
-    Generate variations of a query for multi-query retrieval.
-    This helps find documents that might use different terminology.
-    """
-    variations = [query]  # Original query
-    
-    # Extract key terms
-    key_terms = extract_key_terms(query)
-    
-    # Common expansions/synonyms
-    expansions = {
-        'fix': ['resolve', 'troubleshoot', 'solution for'],
-        'error': ['issue', 'problem', 'failure'],
-        'backup': ['protect', 'save', 'archive'],
-        'restore': ['recover', 'retrieve', 'bring back'],
-        'configure': ['set up', 'setup', 'create'],
-        'slow': ['performance', 'speed', 'taking long'],
-        'fail': ['not working', 'error', 'unsuccessful'],
-        'vss': ['volume shadow copy', 'shadow copy'],
-        'synthetic': ['synthetic full', 'synthetic backup'],
-        'incremental': ['incremental backup', 'delta backup'],
-    }
-    
-    query_lower = query.lower()
-    
-    # Generate variations using expansions
-    for term, synonyms in expansions.items():
-        if term in query_lower:
-            for synonym in synonyms[:2]:  # Limit to 2 synonyms per term
-                variation = query_lower.replace(term, synonym)
-                if variation != query_lower:
-                    variations.append(variation)
-    
-    # Add a more specific technical query if error code present
-    for code in re.findall(r'\b\d{3,4}\b', query):
-        variations.append(f"MSP360 error code {code} solution")
-    
-    # Limit total variations
-    return list(set(variations))[:5]
-
-
-def deduplicate_results(all_results: List[Dict]) -> List[Dict]:
-    """Remove duplicate results based on URL"""
-    seen_urls = set()
-    unique_results = []
-    
-    for result in all_results:
-        url = result.get("url", "")
-        if url and url not in seen_urls:
-            seen_urls.add(url)
-            unique_results.append(result)
-    
-    return unique_results
-
-
-def merge_and_rank_results(all_results: List[Dict], limit: int = 5) -> List[Dict]:
-    """
-    Merge results from multiple queries and rank by combined score.
-    Uses Reciprocal Rank Fusion (RRF) for fair combination.
-    """
-    # Deduplicate first
-    unique_results = deduplicate_results(all_results)
-    
-    # Calculate RRF scores
-    url_scores: Dict[str, float] = {}
-    url_results: Dict[str, Dict] = {}
-    
-    for i, result in enumerate(unique_results):
-        url = result.get("url", "")
-        if not url:
-            continue
-        
-        # RRF formula: 1 / (k + rank), where k is a constant (typically 60)
-        rank = i + 1
-        rrf_score = 1.0 / (60 + rank)
-        
-        if url in url_scores:
-            url_scores[url] += rrf_score
-        else:
-            url_scores[url] = rrf_score
-            url_results[url] = result
-    
-    # Sort by RRF score
-    sorted_urls = sorted(url_scores.keys(), key=lambda x: url_scores[x], reverse=True)
-    
-    # Build final results
-    final_results = []
-    for url in sorted_urls[:limit]:
-        result = url_results[url]
-        result["combined_score"] = url_scores[url]
-        final_results.append(result)
-    
-    return final_results
 
 
 @msp_expert.tool
@@ -296,61 +173,6 @@ async def retrieve_relevant_docs(
         
     except Exception as e:
         return f"Error searching documentation: {str(e)}"
-
-
-@msp_expert.tool
-async def enhanced_multi_query_search(
-    ctx: RunContext[MSPDeps],
-    query: str,
-    category: Optional[str] = None,
-    limit: int = 5
-) -> str:
-    """
-    Enhanced search using multiple query variations for better coverage.
-    Use this for complex questions where the standard search might miss relevant docs.
-    
-    This tool:
-    1. Generates multiple variations of your query
-    2. Searches for each variation
-    3. Combines and re-ranks the results using Reciprocal Rank Fusion
-    
-    Args:
-        ctx: Run context with dependencies
-        query: User's question or search term
-        category: Filter by category (optional)
-        limit: Number of final results to return (default 5)
-    
-    Returns:
-        Formatted documentation from the combined search results.
-    """
-    try:
-        # Generate query variations
-        variations = generate_query_variations(query)
-        
-        all_results = []
-        
-        # Search with each variation
-        for variation in variations:
-            results = await ctx.deps.qdrant_tools.search_docs(
-                query=variation,
-                category=category,
-                limit=limit,
-                bypass_cache=True  # Don't cache intermediate results
-            )
-            all_results.extend(results)
-        
-        # Merge and rank
-        final_results = merge_and_rank_results(all_results, limit=limit)
-        
-        if not final_results:
-            return f"No relevant documentation found for query: '{query}'"
-        
-        # Format results
-        formatted = format_search_results(final_results)
-        return f"[Multi-query search with {len(variations)} variations]\n\n{formatted}"
-        
-    except Exception as e:
-        return f"Error in multi-query search: {str(e)}"
 
 
 @msp_expert.tool

@@ -7,7 +7,6 @@ import asyncio
 import hashlib
 import time
 from datetime import datetime
-from typing import Optional
 import streamlit as st
 from dotenv import load_dotenv
 
@@ -50,14 +49,6 @@ if "messages" not in st.session_state:
 if "feedback" not in st.session_state:
     st.session_state.feedback = {}  # message_id -> {"rating": "positive"/"negative", "timestamp": ...}
 
-if "analytics" not in st.session_state:
-    st.session_state.analytics = {
-        "queries": [],
-        "response_times": [],
-        "error_codes_searched": [],
-        "categories_accessed": []
-    }
-
 if "agent" not in st.session_state:
     try:
         st.session_state.agent, st.session_state.deps = create_msp_expert()
@@ -85,19 +76,6 @@ def export_chat_markdown() -> str:
     return export
 
 
-def record_analytics(query: str, response_time: float, error_code: Optional[str] = None):
-    """Record query analytics"""
-    st.session_state.analytics["queries"].append({
-        "query": query,
-        "timestamp": datetime.now().isoformat(),
-        "response_time": response_time
-    })
-    st.session_state.analytics["response_times"].append(response_time)
-    
-    if error_code:
-        st.session_state.analytics["error_codes_searched"].append(error_code)
-
-
 async def run_agent_streaming(prompt: str, message_placeholder):
     """Run agent with streaming response"""
     full_response = ""
@@ -114,8 +92,6 @@ async def run_agent_streaming(prompt: str, message_placeholder):
                 message_placeholder.markdown(full_response + "▌")
         
         message_placeholder.markdown(full_response)
-        response_time = time.time() - start_time
-        record_analytics(prompt, response_time)
         return full_response
         
     except Exception as stream_error:
@@ -127,8 +103,6 @@ async def run_agent_streaming(prompt: str, message_placeholder):
         )
         full_response = result.data
         message_placeholder.markdown(full_response)
-        response_time = time.time() - start_time
-        record_analytics(prompt, response_time)
         return full_response
 
 
@@ -178,23 +152,6 @@ with st.sidebar:
                 mime="text/markdown",
                 use_container_width=True
             )
-    
-    st.markdown("---")
-    
-    # Analytics summary
-    with st.expander("📊 Session Analytics"):
-        total_queries = len(st.session_state.analytics["queries"])
-        if total_queries > 0:
-            avg_time = sum(st.session_state.analytics["response_times"]) / total_queries
-            st.metric("Total Queries", total_queries)
-            st.metric("Avg Response Time", f"{avg_time:.2f}s")
-            
-            positive = sum(1 for f in st.session_state.feedback.values() if f.get("rating") == "positive")
-            negative = sum(1 for f in st.session_state.feedback.values() if f.get("rating") == "negative")
-            if positive + negative > 0:
-                st.metric("Feedback", f"👍 {positive} / 👎 {negative}")
-        else:
-            st.caption("No queries yet")
     
     st.markdown("---")
     
