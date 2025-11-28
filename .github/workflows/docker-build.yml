@@ -1,6 +1,9 @@
 name: Build and Push Docker Image
 
 on:
+  # Manual trigger
+  workflow_dispatch:
+  
   push:
     branches:
       - main
