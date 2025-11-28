@@ -6,5 +6,6 @@ resources:
   - configmap.yaml
   - deployment.yaml
   - service.yaml
-  - secrets/
+  # The plugin decrypts msp360-secrets.enc.yaml to msp360-secrets.yaml
+  - secrets/msp360-secrets.yaml
 

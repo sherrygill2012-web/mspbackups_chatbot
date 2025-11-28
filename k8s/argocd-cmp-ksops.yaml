@@ -1,0 +1,27 @@
+# ArgoCD Config Management Plugin for KSOPS
+# This creates a sidecar container that handles SOPS-encrypted secrets
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cmp-plugin
+  namespace: argocd
+data:
+  plugin.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: ksops
+    spec:
+      version: v1.0
+      generate:
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            set -e
+            # Find all .enc.yaml files and decrypt them
+            find . -name "*.enc.yaml" -type f | while read -r file; do
+              sops --decrypt "$file" > "${file%.enc.yaml}.yaml"
+            done
+            # Run kustomize build
+            kustomize build .
+
