@@ -17,14 +17,14 @@ data:
         command: ["/bin/sh", "-c"]
         args:
           - |
-            # Set up ksops plugin for kustomize
-            mkdir -p /home/argocd/.config/kustomize/plugin/viaduct.ai/v1/ksops
-            cp /usr/local/bin/ksops /home/argocd/.config/kustomize/plugin/viaduct.ai/v1/ksops/ksops
+            # Set up ksops plugin for kustomize in /tmp (writable)
+            mkdir -p /tmp/kustomize/plugin/viaduct.ai/v1/ksops
+            cp /usr/local/bin/ksops /tmp/kustomize/plugin/viaduct.ai/v1/ksops/ksops
       generate:
         command: ["/bin/sh", "-c"]
         args:
           - |
-            export XDG_CONFIG_HOME=/home/argocd/.config
-            export KUSTOMIZE_PLUGIN_HOME=/home/argocd/.config/kustomize/plugin
+            export XDG_CONFIG_HOME=/tmp
+            export KUSTOMIZE_PLUGIN_HOME=/tmp/kustomize/plugin
             /usr/local/bin/kustomize build --enable-alpha-plugins .
 
