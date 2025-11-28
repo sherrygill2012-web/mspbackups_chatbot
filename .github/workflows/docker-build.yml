@@ -7,8 +7,10 @@ on:
       - master
     paths:
       - '*.py'
+      - 'pages/**'
       - 'requirements.txt'
       - 'Dockerfile'
+      - 'docker-entrypoint.sh'
       - '.streamlit/**'
   pull_request:
     branches:
