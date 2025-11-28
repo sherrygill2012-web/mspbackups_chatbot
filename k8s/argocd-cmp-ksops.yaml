@@ -13,15 +13,18 @@ data:
       name: ksops
     spec:
       version: v1.0
+      init:
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            # Set up ksops plugin for kustomize
+            mkdir -p /home/argocd/.config/kustomize/plugin/viaduct.ai/v1/ksops
+            cp /usr/local/bin/ksops /home/argocd/.config/kustomize/plugin/viaduct.ai/v1/ksops/ksops
       generate:
         command: ["/bin/sh", "-c"]
         args:
           - |
-            set -e
-            # Find all .enc.yaml files and decrypt them
-            find . -name "*.enc.yaml" -type f | while read -r file; do
-              sops --decrypt "$file" > "${file%.enc.yaml}.yaml"
-            done
-            # Run kustomize build
-            kustomize build .
+            export XDG_CONFIG_HOME=/home/argocd/.config
+            export KUSTOMIZE_PLUGIN_HOME=/home/argocd/.config/kustomize/plugin
+            /usr/local/bin/kustomize build --enable-alpha-plugins .
 
