@@ -21,7 +21,6 @@ RUN pip install --no-cache-dir \
 
 # Copy application code
 COPY *.py ./
-COPY pages/ pages/
 COPY .streamlit/ .streamlit/
 
 # Create directories for persistence
