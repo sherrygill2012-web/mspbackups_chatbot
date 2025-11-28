@@ -79,6 +79,7 @@ logs/
 # Allow the template file first
 !k8s/secret.yaml
 # Then ignore other secret files
+k8s/ghcr-secret.yaml
 *secret*.local.yaml
 *secret*.local.yml
 *secrets*.yaml
