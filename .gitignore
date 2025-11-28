@@ -71,21 +71,15 @@ logs/
 *.temp
 =2.2.0
 
-# Kubernetes secrets - SOPS encrypted files ARE allowed
+# Kubernetes secrets - Kubeseal encrypted files ARE allowed
 # Plaintext secrets - NEVER commit these
-k8s/secrets/msp360-secrets.yaml
 k8s/secret.yaml
-k8s/*-secret.yaml
 k8s/ghcr-secret.yaml
 *secret*.local.yaml
 *secret*.local.yml
-*.decrypted.yaml
-*.decrypted.yml
 
-# Allow SOPS encrypted files and kustomization
-!k8s/secrets/*.enc.yaml
-!k8s/secrets/kustomization.yaml
-!k8s/secrets/secret-generator.yaml
+# Allow SealedSecrets (encrypted, safe to commit)
+!k8s/sealed-secret.yaml
 
 # OS
 .DS_Store

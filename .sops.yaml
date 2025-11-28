@@ -1,9 +1,0 @@
-creation_rules:
-  # Encrypt all YAML files in k8s/secrets/ directory
-  - path_regex: k8s/secrets/.*\.yaml$
-    age: 'age150mcr0vkltgr854rjnydst80r50rj5uc7tt24h0kaewru3r45vysyh7cns'
-  
-  # Encrypt .env files if needed
-  - path_regex: \.env\.encrypted$
-    age: 'age150mcr0vkltgr854rjnydst80r50rj5uc7tt24h0kaewru3r45vysyh7cns'
-
