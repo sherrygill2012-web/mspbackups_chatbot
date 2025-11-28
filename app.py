@@ -4,9 +4,8 @@ Web UI with conversation history, streaming, feedback, and export features
 """
 
 import asyncio
-import json
-import time
 import hashlib
+import time
 from datetime import datetime
 from typing import Optional
 import streamlit as st
@@ -26,129 +25,22 @@ st.set_page_config(
 )
 
 # Version info for testing CI/CD pipeline
-VERSION = "v2.0.0"
+VERSION = "v2.1.0"
 
-# Initialize theme in session state
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = False
-
-# Custom CSS with dark mode support
-def get_custom_css(dark_mode: bool = False) -> str:
-    if dark_mode:
-        return """
-        <style>
-        .stApp {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: #1a1a2e;
-            color: #eaeaea;
-        }
-        .source-box {
-            background-color: #16213e;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            border: 1px solid #0f3460;
-        }
-        .feedback-btn {
-            display: inline-block;
-            padding: 5px 15px;
-            margin: 5px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .feedback-positive {
-            background-color: #0f3460;
-            border: 1px solid #00d9ff;
-        }
-        .feedback-positive:hover {
-            background-color: #1a4a7a;
-        }
-        .feedback-negative {
-            background-color: #0f3460;
-            border: 1px solid #ff6b6b;
-        }
-        .feedback-negative:hover {
-            background-color: #3a1a1a;
-        }
-        .suggestion-chip {
-            display: inline-block;
-            padding: 8px 16px;
-            margin: 4px;
-            background-color: #16213e;
-            border: 1px solid #0f3460;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .suggestion-chip:hover {
-            background-color: #1a4a7a;
-            border-color: #00d9ff;
-        }
-        .stChatMessage {
-            background-color: #16213e !important;
-        }
-        .stMarkdown a {
-            color: #00d9ff !important;
-        }
-        div[data-testid="stSidebar"] {
-            background-color: #16213e;
-        }
-        </style>
-        """
-    else:
-        return """
-        <style>
-        .stApp {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .source-box {
-            background-color: #f0f2f6;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-        .feedback-btn {
-            display: inline-block;
-            padding: 5px 15px;
-            margin: 5px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .feedback-positive {
-            background-color: #e8f5e9;
-            border: 1px solid #4caf50;
-        }
-        .feedback-positive:hover {
-            background-color: #c8e6c9;
-        }
-        .feedback-negative {
-            background-color: #ffebee;
-            border: 1px solid #f44336;
-        }
-        .feedback-negative:hover {
-            background-color: #ffcdd2;
-        }
-        .suggestion-chip {
-            display: inline-block;
-            padding: 8px 16px;
-            margin: 4px;
-            background-color: #e3f2fd;
-            border: 1px solid #2196f3;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .suggestion-chip:hover {
-            background-color: #bbdefb;
-        }
-        </style>
-        """
-
-st.markdown(get_custom_css(st.session_state.dark_mode), unsafe_allow_html=True)
+# Custom CSS
+st.markdown("""
+<style>
+.stApp {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.source-box {
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
 
 
 # Initialize session state
@@ -244,21 +136,6 @@ async def run_agent_streaming(prompt: str, message_placeholder):
 with st.sidebar:
     st.title("💾 MSP360 Backup Expert")
     st.caption(f"Version {VERSION}")
-    st.markdown("---")
-    
-    # Theme toggle
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.write("🌙 Dark Mode")
-    with col2:
-        if st.toggle("", value=st.session_state.dark_mode, key="theme_toggle"):
-            st.session_state.dark_mode = True
-            st.rerun()
-        else:
-            if st.session_state.dark_mode:
-                st.session_state.dark_mode = False
-                st.rerun()
-    
     st.markdown("---")
     
     st.markdown("""
@@ -509,9 +386,8 @@ if prompt := st.chat_input("Ask about MSP360 Backup..."):
 
 # Footer
 st.markdown("---")
-footer_style = "color: #888;" if st.session_state.dark_mode else "color: #666;"
-st.markdown(f"""
-<div style='text-align: center; {footer_style} font-size: 0.9em;'>
+st.markdown("""
+<div style='text-align: center; color: #666; font-size: 0.9em;'>
     Powered by Pydantic AI + OpenAI (LLM) + Gemini (Embeddings) + Qdrant | 
     <a href='https://help.msp360.com' target='_blank'>MSP360 Documentation</a> | 
     <a href='https://kb.msp360.com' target='_blank'>Knowledge Base</a>
