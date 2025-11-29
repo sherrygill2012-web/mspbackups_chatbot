@@ -8,15 +8,9 @@ griffe==1.5.1
 openai==1.59.5
 sentence-transformers>=2.2.0
 
-# REST API
-fastapi>=0.109.0
-uvicorn>=0.27.0
-pydantic>=2.0.0
-
 # Slack integration (optional)
 slack-bolt>=1.18.0
 
 # Additional utilities
 aiohttp>=3.9.0
 beautifulsoup4>=4.12.0
-redis>=5.0.0
