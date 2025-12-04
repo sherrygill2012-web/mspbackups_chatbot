@@ -57,6 +57,10 @@ if "agent" not in st.session_state:
         st.session_state.agent_ready = False
         st.session_state.error = str(e)
 
+# Initialize agent message history for conversation memory
+if "agent_message_history" not in st.session_state:
+    st.session_state.agent_message_history = []
+
 
 def generate_message_id(content: str, timestamp: float) -> str:
     """Generate a unique message ID"""
@@ -76,34 +80,49 @@ def export_chat_markdown() -> str:
     return export
 
 
-async def run_agent_streaming(prompt: str, message_placeholder):
-    """Run agent with streaming response"""
+async def run_agent_streaming(prompt: str, message_placeholder, message_history: list = None):
+    """Run agent with streaming response and conversation memory.
+    
+    Args:
+        prompt: User's question
+        message_placeholder: Streamlit placeholder for streaming output
+        message_history: Previous conversation messages for context
+    
+    Returns:
+        Tuple of (response_text, updated_message_history)
+    """
     full_response = ""
-    start_time = time.time()
+    updated_history = message_history or []
     
     try:
-        # Try streaming first
+        # Try streaming first with message history for context
         async with st.session_state.agent.run_stream(
             prompt,
-            deps=st.session_state.deps
+            deps=st.session_state.deps,
+            message_history=message_history
         ) as result:
             async for text in result.stream_text(delta=True):
                 full_response += text
                 message_placeholder.markdown(full_response + "▌")
         
         message_placeholder.markdown(full_response)
-        return full_response
+        # Return response and updated history for next turn
+        updated_history = result.all_messages()
+        return full_response, updated_history
         
     except Exception as stream_error:
         # Fallback to non-streaming if streaming fails
         message_placeholder.markdown("🤔 Processing your question...")
         result = await st.session_state.agent.run(
             prompt,
-            deps=st.session_state.deps
+            deps=st.session_state.deps,
+            message_history=message_history
         )
         full_response = result.data
         message_placeholder.markdown(full_response)
-        return full_response
+        # Return response and updated history for next turn
+        updated_history = result.all_messages()
+        return full_response, updated_history
 
 
 # Sidebar
@@ -139,6 +158,7 @@ with st.sidebar:
         if st.button("🗑️ Clear Chat", use_container_width=True):
             st.session_state.messages = []
             st.session_state.feedback = {}
+            st.session_state.agent_message_history = []  # Also clear conversation context
             st.rerun()
     
     with col2:
@@ -152,6 +172,13 @@ with st.sidebar:
                 mime="text/markdown",
                 use_container_width=True
             )
+    
+    # Clear context button - resets conversation memory without clearing visible chat
+    if st.session_state.agent_message_history:
+        if st.button("🔄 Clear Context", use_container_width=True, help="Reset conversation memory (agent forgets previous context but chat history remains visible)"):
+            st.session_state.agent_message_history = []
+            st.toast("Conversation context cleared! The assistant will treat the next question as a fresh start.", icon="🔄")
+            st.rerun()
     
     st.markdown("---")
     
@@ -280,10 +307,17 @@ if "pending_query" in st.session_state:
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            response = loop.run_until_complete(
-                run_agent_streaming(prompt, message_placeholder)
+            response, updated_history = loop.run_until_complete(
+                run_agent_streaming(
+                    prompt,
+                    message_placeholder,
+                    st.session_state.agent_message_history
+                )
             )
             loop.close()
+            
+            # Store updated message history for conversation context
+            st.session_state.agent_message_history = updated_history
             
             resp_id = generate_message_id(response, time.time())
             st.session_state.messages.append({
@@ -317,10 +351,17 @@ if prompt := st.chat_input("Ask about MSP360 Backup..."):
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            response = loop.run_until_complete(
-                run_agent_streaming(prompt, message_placeholder)
+            response, updated_history = loop.run_until_complete(
+                run_agent_streaming(
+                    prompt,
+                    message_placeholder,
+                    st.session_state.agent_message_history
+                )
             )
             loop.close()
+            
+            # Store updated message history for conversation context
+            st.session_state.agent_message_history = updated_history
             
             # Add assistant response to chat with ID for feedback
             resp_id = generate_message_id(response, time.time())
