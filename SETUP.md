@@ -33,16 +33,16 @@ Required configuration:
 OPENAI_API_KEY=your_openai_api_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
 QDRANT_URL=http://localhost:6333
-COLLECTION_NAME=msp360_docs
+COLLECTION_NAME=msp_docs_v2
 LLM_PROVIDER=openai
 LLM_MODEL=gpt-4o-mini
 EMBEDDING_PROVIDER=gemini
-EMBEDDING_MODEL=models/text-embedding-004
+EMBEDDING_MODEL=models/gemini-embedding-001
 ```
 
 ### 4. Verify Qdrant Collection
 
-Make sure your `msp360_docs` collection is populated with data from both:
+Make sure your `msp_docs_v2` collection is populated with data from both:
 - kb.msp360.com
 - help.msp360.com
 
@@ -118,7 +118,7 @@ Assistant: [Returns pages from both sources]
 ### "Agent failed to initialize"
 - Check OPENAI_API_KEY is set correctly
 - Verify Qdrant is running: `curl http://localhost:6333`
-- Confirm msp360_docs collection exists
+- Confirm msp_docs_v2 collection exists
 
 ### "No results found"
 - Verify collection has data: Check Qdrant dashboard

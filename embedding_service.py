@@ -49,7 +49,7 @@ class EmbeddingService:
             # Gemini
             import google.generativeai as genai
             self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-            model_name = model or os.getenv("EMBEDDING_MODEL", "models/text-embedding-004")
+            model_name = model or os.getenv("EMBEDDING_MODEL", "models/gemini-embedding-001")
             
             # Ensure model name has correct prefix
             if not model_name.startswith(("models/", "tunedModels/")):

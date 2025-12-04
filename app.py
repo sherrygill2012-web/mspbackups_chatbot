@@ -183,7 +183,7 @@ if not st.session_state.agent_ready:
     1. .env file exists with OPENAI_API_KEY and GEMINI_API_KEY
     2. LLM_PROVIDER=openai and EMBEDDING_PROVIDER=gemini
     3. Qdrant is running at QDRANT_URL
-    4. msp360_docs collection exists in Qdrant
+    4. msp_docs_v2 collection exists in Qdrant
     """)
     st.stop()
 

@@ -49,13 +49,13 @@ class QdrantTools:
         Args:
             url: Qdrant URL (defaults to env var)
             api_key: Qdrant API key (defaults to env var)
-            collection_name: Collection name (defaults to msp360_docs)
+            collection_name: Collection name (defaults to msp_docs_v2)
             embedding_service: Embedding service instance
             use_cache: Whether to use search result caching (default True)
         """
         self.url = url or os.getenv("QDRANT_URL", "http://localhost:6333")
         self.api_key = api_key or os.getenv("QDRANT_API_KEY")
-        self.collection_name = collection_name or os.getenv("COLLECTION_NAME", "msp360_docs")
+        self.collection_name = collection_name or os.getenv("COLLECTION_NAME", "msp_docs_v2")
         self.use_cache = use_cache
         self._cache = get_search_cache() if use_cache else None
         

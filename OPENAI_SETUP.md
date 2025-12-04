@@ -28,7 +28,7 @@ Add your OpenAI API key:
 ```bash
 OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 QDRANT_URL=http://localhost:6333
-COLLECTION_NAME=msp360_docs
+COLLECTION_NAME=msp_docs_v2
 LLM_PROVIDER=openai
 LLM_MODEL=gpt-4o-mini
 EMBEDDING_PROVIDER=openai
@@ -103,7 +103,7 @@ GEMINI_API_KEY=your_gemini_key
 LLM_PROVIDER=gemini
 LLM_MODEL=gemini-2.5-flash
 EMBEDDING_PROVIDER=gemini
-EMBEDDING_MODEL=models/text-embedding-004
+EMBEDDING_MODEL=models/gemini-embedding-001
 ```
 
 ## Hybrid Configuration
@@ -116,7 +116,7 @@ GEMINI_API_KEY=your_gemini_key
 LLM_PROVIDER=openai
 LLM_MODEL=gpt-4o-mini
 EMBEDDING_PROVIDER=gemini
-EMBEDDING_MODEL=models/text-embedding-004
+EMBEDDING_MODEL=models/gemini-embedding-001
 ```
 
 **Note**: If switching embedding providers, you'll need to **re-embed your Qdrant collection** as the vector dimensions differ:

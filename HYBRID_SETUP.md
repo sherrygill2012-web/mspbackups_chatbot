@@ -6,7 +6,7 @@ Your MSP360 Backup Chatbot uses a **hybrid approach**:
 
 ## Why This Configuration?
 
-Your Qdrant collection (`msp360_docs`) was created with **Gemini embeddings (768 dimensions)**. To use this existing collection, we must continue using Gemini for embeddings. However, we can still benefit from OpenAI's superior language model for generating responses!
+Your Qdrant collection (`msp_docs_v2`) was created with **Gemini embeddings (768 dimensions)**. To use this existing collection, we must continue using Gemini for embeddings. However, we can still benefit from OpenAI's superior language model for generating responses!
 
 ## Setup Instructions
 
@@ -38,7 +38,7 @@ GEMINI_API_KEY=your_gemini_key_here
 # Qdrant Configuration
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=
-COLLECTION_NAME=msp360_docs
+COLLECTION_NAME=msp_docs_v2
 
 # LLM Configuration - use OpenAI
 LLM_PROVIDER=openai
@@ -46,7 +46,7 @@ LLM_MODEL=gpt-4o-mini
 
 # Embedding Configuration - use Gemini
 EMBEDDING_PROVIDER=gemini
-EMBEDDING_MODEL=models/text-embedding-004
+EMBEDDING_MODEL=models/gemini-embedding-001
 ```
 
 ### 3. Install Dependencies
@@ -76,7 +76,7 @@ streamlit run app.py
 1. **User asks a question** → "How to fix error 1531?"
 
 2. **Gemini generates embedding** for the query (768 dimensions)
-   - Uses `text-embedding-004` model
+   - Uses `gemini-embedding-001` model
    - Matches your Qdrant collection format
 
 3. **Qdrant searches** for similar documents
@@ -159,7 +159,7 @@ GEMINI_API_KEY=your_key
 LLM_PROVIDER=gemini
 LLM_MODEL=gemini-2.5-flash
 EMBEDDING_PROVIDER=gemini
-EMBEDDING_MODEL=models/text-embedding-004
+EMBEDDING_MODEL=models/gemini-embedding-001
 ```
 
 **✅ Works with:** Your existing Qdrant collection
