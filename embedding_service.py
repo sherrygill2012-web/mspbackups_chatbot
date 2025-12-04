@@ -61,7 +61,8 @@ class EmbeddingService:
                 raise ValueError("GEMINI_API_KEY not found in environment")
             
             genai.configure(api_key=self.api_key)
-            self.dimension = 768
+            # gemini-embedding-001 produces 3072-dim vectors, text-embedding-004 produces 768
+            self.dimension = 3072 if "gemini-embedding-001" in self.model else 768
     
     async def generate_embedding(
         self,
