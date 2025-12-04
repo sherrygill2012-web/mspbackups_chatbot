@@ -33,7 +33,7 @@ An intelligent chatbot that answers MSP360 Backup questions using RAG (Retrieval
 ## Prerequisites
 
 - Python 3.8+
-- Qdrant running with `msp_docs_v2` collection
+- Qdrant running with `msp360_docs_v2` collection
 - API keys for your chosen providers (OpenAI, Gemini, etc.)
 
 ## Quick Start
@@ -56,7 +56,7 @@ Required environment variables:
 OPENAI_API_KEY=your_openai_api_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
 QDRANT_URL=http://localhost:6333
-COLLECTION_NAME=msp_docs_v2
+COLLECTION_NAME=msp360_docs_v2
 LLM_PROVIDER=openai
 LLM_MODEL=gpt-4o-mini
 EMBEDDING_PROVIDER=gemini
@@ -264,7 +264,7 @@ ANALYTICS_PERSIST_PATH=analytics_data.json
 
 - Check that required API keys are set in `.env`
 - Verify Qdrant is running: `curl http://localhost:6333`
-- Confirm `msp_docs_v2` collection exists in Qdrant
+- Confirm `msp360_docs_v2` collection exists in Qdrant
 
 ### No results found
 
