@@ -6,7 +6,7 @@ metadata:
 data:
   # Qdrant is in the n8n namespace on port 80
   QDRANT_URL: "http://qdrant.n8n.svc.cluster.local:80"
-  COLLECTION_NAME: "msp_docs_v2"
+  COLLECTION_NAME: "msp360_docs_v2"
   LLM_PROVIDER: "openai"
   LLM_MODEL: "gpt-4o-mini"
   EMBEDDING_PROVIDER: "gemini"
