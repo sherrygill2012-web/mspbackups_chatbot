@@ -1,5 +1,5 @@
 # Use slim Python image
-FROM python:3.11-slim
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
@@ -15,12 +15,14 @@ COPY requirements.txt .
 # Then install other requirements
 RUN pip install --no-cache-dir \
     torch --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir -r requirements.txt && \
-    # Clean up pip cache
-    rm -rf /root/.cache/pip
+    pip install --no-cache-dir -r requirements.txt
+
+# Pre-download the CrossEncoder model at build time for faster startup
+# This caches the ~80MB model in the image instead of downloading at runtime
+RUN python -c "from sentence_transformers import CrossEncoder; CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')"
 
 # Copy application code
-COPY *.py ./
+COPY app.py msp_expert.py qdrant_tools.py embedding_service.py cache_service.py ./
 COPY .streamlit/ .streamlit/
 
 # Create directories for persistence
@@ -30,7 +32,8 @@ RUN mkdir -p /app/data
 EXPOSE 8501 8000
 
 # Health check for Streamlit
-HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
 # Default to Streamlit, can be overridden
 # To run API: docker run -e RUN_MODE=api ...
