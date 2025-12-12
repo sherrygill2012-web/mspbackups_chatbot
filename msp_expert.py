@@ -110,7 +110,46 @@ llm_model = os.getenv("LLM_MODEL", "gemini-2.5-flash")
 
 if llm_provider.lower() == "openai":
     from pydantic_ai.models.openai import OpenAIModel
-    model = OpenAIModel(llm_model)
+    from pydantic_ai.providers.openai import OpenAIProvider
+    from openai import AsyncAzureOpenAI
+    
+    # Check if Azure OpenAI configuration is provided
+    azure_endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
+    azure_api_key = os.environ.get("AZURE_OPENAI_API_KEY")
+    azure_api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
+    
+    if azure_endpoint and azure_api_key:
+        # Use Azure OpenAI Service with AsyncAzureOpenAI client
+        # Model name must be set to the deployment name: gpt-4.1-mini
+        azure_model_name = os.getenv("LLM_MODEL", "gpt-4.1-mini")
+        
+        # Create AsyncAzureOpenAI client for Azure/Foundry endpoint
+        # This is crucial for correctly routing calls to the Azure/Foundry endpoint
+        azure_client = AsyncAzureOpenAI(
+            azure_endpoint=azure_endpoint,
+            api_key=azure_api_key,
+            api_version=azure_api_version
+        )
+        
+        # Configure OpenAIModel with Azure client using OpenAIProvider
+        # Pass the configured AsyncAzureOpenAI client into the OpenAIProvider
+        # using the openai_client parameter
+        model = OpenAIModel(
+            azure_model_name,  # Deployment name: gpt-4.1-mini
+            provider=OpenAIProvider(openai_client=azure_client)
+        )
+        
+        # Example usage:
+        # Set environment variables:
+        #   export AZURE_OPENAI_ENDPOINT="https://<YOUR-RESOURCE-NAME>.openai.azure.com/"
+        #   export AZURE_OPENAI_API_KEY="your-api-key"
+        #   export AZURE_OPENAI_API_VERSION="2024-02-15-preview"
+        #   export LLM_PROVIDER="openai"
+        #   export LLM_MODEL="gpt-4.1-mini"
+        # Then create agent: agent, deps = create_msp_expert()
+    else:
+        # Fallback to standard OpenAI API if Azure config not provided
+        model = OpenAIModel(llm_model)
 elif llm_provider.lower() == "anthropic":
     from pydantic_ai.models.anthropic import AnthropicModel
     model = AnthropicModel(llm_model)

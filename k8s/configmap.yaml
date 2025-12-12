@@ -7,8 +7,12 @@ data:
   # Qdrant is in the n8n namespace on port 80
   QDRANT_URL: "http://qdrant.n8n.svc.cluster.local:80"
   COLLECTION_NAME: "msp360_docs_v2"
+  # LLM Configuration
+  # For Azure OpenAI Service (Microsoft Foundry), set these via SealedSecret:
+  # AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION
+  # and set LLM_MODEL to the deployment name (e.g., "gpt-4.1-mini")
   LLM_PROVIDER: "openai"
-  LLM_MODEL: "gpt-4o-mini"
+  LLM_MODEL: "gpt-4o-mini"  # Use "gpt-4.1-mini" for Azure OpenAI deployment
   EMBEDDING_PROVIDER: "gemini"
   EMBEDDING_MODEL: "models/gemini-embedding-001"
   # Redis cache configuration

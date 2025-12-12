@@ -207,7 +207,10 @@ if not st.session_state.agent_ready:
     ❌ Failed to initialize agent: {st.session_state.get('error', 'Unknown error')}
     
     Please check:
-    1. .env file exists with OPENAI_API_KEY and GEMINI_API_KEY
+    1. .env file exists with required API keys:
+       - For Azure OpenAI: AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION
+       - For standard OpenAI: OPENAI_API_KEY
+       - GEMINI_API_KEY (for embeddings)
     2. LLM_PROVIDER=openai and EMBEDDING_PROVIDER=gemini
     3. Qdrant is running at QDRANT_URL
     4. msp360_docs_v2 collection exists in Qdrant

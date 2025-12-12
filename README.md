@@ -52,6 +52,22 @@ cp env_example.txt .env
 ```
 
 Required environment variables:
+
+**For Azure OpenAI Service (Microsoft Foundry):**
+```bash
+AZURE_OPENAI_ENDPOINT=https://<YOUR-RESOURCE-NAME>.openai.azure.com/
+AZURE_OPENAI_API_KEY=your_azure_api_key_here
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
+LLM_PROVIDER=openai
+LLM_MODEL=gpt-4.1-mini
+GEMINI_API_KEY=your_gemini_api_key_here
+QDRANT_URL=http://localhost:6333
+COLLECTION_NAME=msp360_docs_v2
+EMBEDDING_PROVIDER=gemini
+EMBEDDING_MODEL=models/gemini-embedding-001
+```
+
+**For standard OpenAI API:**
 ```bash
 OPENAI_API_KEY=your_openai_api_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
