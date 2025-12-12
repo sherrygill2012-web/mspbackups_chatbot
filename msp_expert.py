@@ -141,7 +141,7 @@ if llm_provider.lower() == "openai":
         
         # Example usage:
         # Set environment variables:
-        #   export AZURE_OPENAI_ENDPOINT="https://<YOUR-RESOURCE-NAME>.openai.azure.com/"
+        #   export AZURE_OPENAI_ENDPOINT="https://gillm-7850-resource.openai.azure.com/"
         #   export AZURE_OPENAI_API_KEY="your-api-key"
         #   export AZURE_OPENAI_API_VERSION="2024-02-15-preview"
         #   export LLM_PROVIDER="openai"

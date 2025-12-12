@@ -55,7 +55,7 @@ Required environment variables:
 
 **For Azure OpenAI Service (Microsoft Foundry):**
 ```bash
-AZURE_OPENAI_ENDPOINT=https://<YOUR-RESOURCE-NAME>.openai.azure.com/
+AZURE_OPENAI_ENDPOINT=https://gillm-7850-resource.openai.azure.com/
 AZURE_OPENAI_API_KEY=your_azure_api_key_here
 AZURE_OPENAI_API_VERSION=2024-02-15-preview
 LLM_PROVIDER=openai
