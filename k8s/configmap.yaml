@@ -8,11 +8,10 @@ data:
   QDRANT_URL: "http://qdrant.n8n.svc.cluster.local:80"
   COLLECTION_NAME: "msp360_docs_v2"
   # LLM Configuration
-  # For Azure OpenAI Service (Microsoft Foundry), set these via SealedSecret:
-  # AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION
-  # and set LLM_MODEL to the deployment name (e.g., "gpt-4.1-mini")
-  LLM_PROVIDER: "openai"
-  LLM_MODEL: "gpt-4o-mini"  # Use "gpt-4.1-mini" for Azure OpenAI deployment
+  # Using Google Gemini for LLM
+  # Requires GOOGLE_API_KEY in the sealed secret
+  LLM_PROVIDER: "gemini"
+  LLM_MODEL: "gemini-3-flash-preview"
   EMBEDDING_PROVIDER: "gemini"
   EMBEDDING_MODEL: "models/gemini-embedding-001"
   # Redis cache configuration

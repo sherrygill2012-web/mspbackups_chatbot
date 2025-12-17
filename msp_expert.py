@@ -10,7 +10,8 @@ from typing import Optional, List
 from dotenv import load_dotenv
 
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.models.gemini import GeminiModel
+# Use GoogleModel for Gemini 3+ models - handles thought_signature automatically
+from pydantic_ai.models.google import GoogleModel
 
 from embedding_service import EmbeddingService
 from qdrant_tools import QdrantTools, format_search_results
@@ -106,7 +107,7 @@ REMEMBER: Always use retrieve_relevant_docs FIRST, then answer based on the resu
 
 # Initialize LLM model
 llm_provider = os.getenv("LLM_PROVIDER", "gemini")
-llm_model = os.getenv("LLM_MODEL", "gemini-2.5-flash")
+llm_model = os.getenv("LLM_MODEL", "gemini-3-flash-preview")
 
 if llm_provider.lower() == "openai":
     from pydantic_ai.models.openai import OpenAIModel
@@ -138,15 +139,6 @@ if llm_provider.lower() == "openai":
             azure_model_name,  # Deployment name: gpt-4.1-mini
             provider=OpenAIProvider(openai_client=azure_client)
         )
-        
-        # Example usage:
-        # Set environment variables:
-        #   export AZURE_OPENAI_ENDPOINT="https://gillm-7850-resource.openai.azure.com/"
-        #   export AZURE_OPENAI_API_KEY="your-api-key"
-        #   export AZURE_OPENAI_API_VERSION="2024-02-15-preview"
-        #   export LLM_PROVIDER="openai"
-        #   export LLM_MODEL="gpt-4.1-mini"
-        # Then create agent: agent, deps = create_msp_expert()
     else:
         # Fallback to standard OpenAI API if Azure config not provided
         model = OpenAIModel(llm_model)
@@ -157,7 +149,15 @@ elif llm_provider.lower() == "groq":
     from pydantic_ai.models.groq import GroqModel
     model = GroqModel(llm_model)
 else:
-    model = GeminiModel(llm_model)
+    # Gemini - default provider
+    # Uses GOOGLE_API_KEY env var (or GEMINI_API_KEY as fallback)
+    # GoogleModel from pydantic-ai[google] uses google-genai SDK which handles
+    # thought_signature automatically for Gemini 3+ models
+    google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if google_api_key:
+        # Set GOOGLE_API_KEY for pydantic-ai if only GEMINI_API_KEY is set
+        os.environ["GOOGLE_API_KEY"] = google_api_key
+    model = GoogleModel(llm_model)
 
 # Create the agent
 msp_expert = Agent(

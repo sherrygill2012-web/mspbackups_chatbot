@@ -85,3 +85,7 @@ k8s/ghcr-secret.yaml
 .DS_Store
 Thumbs.db
 
+# Binary executables
+kubectl
+kubectl.exe
+

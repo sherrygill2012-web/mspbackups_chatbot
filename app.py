@@ -208,10 +208,9 @@ if not st.session_state.agent_ready:
     
     Please check:
     1. .env file exists with required API keys:
-       - For Azure OpenAI: AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION
-       - For standard OpenAI: OPENAI_API_KEY
-       - GEMINI_API_KEY (for embeddings)
-    2. LLM_PROVIDER=openai and EMBEDDING_PROVIDER=gemini
+       - For Gemini: GOOGLE_API_KEY or GEMINI_API_KEY
+       - For Azure OpenAI: AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY
+    2. LLM_PROVIDER=gemini and EMBEDDING_PROVIDER=gemini
     3. Qdrant is running at QDRANT_URL
     4. msp360_docs_v2 collection exists in Qdrant
     """)
@@ -389,7 +388,7 @@ if prompt := st.chat_input("Ask about MSP360 Backup..."):
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666; font-size: 0.9em;'>
-    Powered by Pydantic AI + OpenAI (LLM) + Gemini (Embeddings) + Qdrant | 
+    Powered by Pydantic AI + Gemini (LLM & Embeddings) + Qdrant | 
     <a href='https://help.msp360.com' target='_blank'>MSP360 Documentation</a> | 
     <a href='https://kb.msp360.com' target='_blank'>Knowledge Base</a>
 </div>
