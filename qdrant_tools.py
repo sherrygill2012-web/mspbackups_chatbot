@@ -8,7 +8,6 @@ from typing import List, Dict, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 from dotenv import load_dotenv
-from sentence_transformers import CrossEncoder
 
 from embedding_service import EmbeddingService
 from cache_service import get_search_cache
@@ -68,13 +67,6 @@ class QdrantTools:
         )
         
         self.embedding_service = embedding_service or EmbeddingService()
-        
-        # Initialize reranker for improved search relevance
-        # Uses a lightweight cross-encoder model (~80MB, cached after first download)
-        self.reranker = CrossEncoder(
-            'cross-encoder/ms-marco-MiniLM-L-6-v2',
-            max_length=512
-        )
     
     def _format_result(self, result, score: float = None) -> Dict:
         """
@@ -132,64 +124,31 @@ class QdrantTools:
         
         return results
     
-    def _rerank_results(self, query: str, results: List[Dict], top_k: int = 5) -> List[Dict]:
-        """
-        Rerank results using cross-encoder for better relevance.
-        
-        The cross-encoder evaluates query-document pairs together,
-        providing more accurate relevance scores than embedding similarity.
-        
-        Args:
-            query: User's search query
-            results: List of formatted search results
-            top_k: Number of top results to return
-        
-        Returns:
-            Reranked and truncated list of results
-        """
-        if not results or len(results) <= 1:
-            return results
-        
-        # Prepare query-document pairs (truncate text for efficiency)
-        pairs = [(query, r.get("text", "")[:500]) for r in results]
-        
-        # Get cross-encoder scores
-        rerank_scores = self.reranker.predict(pairs)
-        
-        # Attach scores and sort
-        for i, result in enumerate(results):
-            result["rerank_score"] = float(rerank_scores[i])
-        
-        return sorted(results, key=lambda x: x["rerank_score"], reverse=True)[:top_k]
-    
     async def search_docs(
         self,
         query: str,
         category: Optional[str] = None,
         limit: int = 5,
-        use_reranking: bool = True,
         bypass_cache: bool = False
     ) -> List[Dict]:
         """
-        Search documentation using semantic similarity with hybrid search, reranking, and caching.
+        Search documentation using semantic similarity with hybrid search and caching.
         
-        Uses a three-stage pipeline:
-        1. Semantic search via embeddings (fetches 2x limit for reranking)
+        Uses a two-stage pipeline:
+        1. Semantic search via embeddings
         2. Keyword boost (hybrid search) - boosts results containing exact query terms
-        3. Cross-encoder reranking - reorders by query-document relevance
         
         Args:
             query: User's search query
             category: Filter by category (optional)
             limit: Number of results to return
-            use_reranking: Whether to apply cross-encoder reranking (default True)
             bypass_cache: Whether to bypass the cache (default False)
         
         Returns:
             List of matching documents with metadata, sorted by relevance
         """
-        # Check cache first (only if reranking enabled and cache not bypassed)
-        if self._cache and use_reranking and not bypass_cache:
+        # Check cache first
+        if self._cache and not bypass_cache:
             cached = self._cache.get(query, category, limit)
             if cached is not None:
                 return cached
@@ -212,14 +171,11 @@ class QdrantTools:
                 ]
             )
         
-        # Fetch more results for reranking (2x limit)
-        fetch_limit = limit * 2 if use_reranking else limit
-        
         # Search Qdrant
         results = self.client.search(
             collection_name=self.collection_name,
             query_vector=query_embedding,
-            limit=fetch_limit,
+            limit=limit,
             query_filter=query_filter
         )
         
@@ -229,19 +185,15 @@ class QdrantTools:
         # Apply keyword boost (hybrid search)
         formatted_results = self._boost_keyword_matches(formatted_results, query)
         
-        # Rerank if enabled and we have multiple results
-        if use_reranking and len(formatted_results) > 1:
-            formatted_results = self._rerank_results(query, formatted_results, top_k=limit)
-        else:
-            # Just sort by hybrid score and limit
-            formatted_results = sorted(
-                formatted_results,
-                key=lambda x: x.get("hybrid_score", x["score"]),
-                reverse=True
-            )[:limit]
+        # Sort by hybrid score
+        formatted_results = sorted(
+            formatted_results,
+            key=lambda x: x.get("hybrid_score", x["score"]),
+            reverse=True
+        )[:limit]
         
         # Cache the results
-        if self._cache and use_reranking and not bypass_cache:
+        if self._cache and not bypass_cache:
             self._cache.set(query, formatted_results, category, limit)
         
         return formatted_results

@@ -11,15 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install CPU-only PyTorch first (much smaller than GPU version)
-# Then install other requirements
-RUN pip install --no-cache-dir \
-    torch --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Pre-download the CrossEncoder model at build time for faster startup
-# This caches the ~80MB model in the image instead of downloading at runtime
-RUN python -c "from sentence_transformers import CrossEncoder; CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')"
+# Install requirements (no PyTorch needed - using Gemini for LLM and embeddings)
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY app.py msp_expert.py qdrant_tools.py embedding_service.py cache_service.py ./
