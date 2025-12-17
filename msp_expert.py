@@ -10,8 +10,7 @@ from typing import Optional, List
 from dotenv import load_dotenv
 
 from pydantic_ai import Agent, RunContext
-# Use GoogleModel for Gemini 3+ models - handles thought_signature automatically
-from pydantic_ai.models.google import GoogleModel
+from pydantic_ai.models.gemini import GeminiModel
 
 from embedding_service import EmbeddingService
 from qdrant_tools import QdrantTools, format_search_results
@@ -151,13 +150,11 @@ elif llm_provider.lower() == "groq":
 else:
     # Gemini - default provider
     # Uses GOOGLE_API_KEY env var (or GEMINI_API_KEY as fallback)
-    # GoogleModel from pydantic-ai[google] uses google-genai SDK which handles
-    # thought_signature automatically for Gemini 3+ models
     google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
     if google_api_key:
         # Set GOOGLE_API_KEY for pydantic-ai if only GEMINI_API_KEY is set
         os.environ["GOOGLE_API_KEY"] = google_api_key
-    model = GoogleModel(llm_model)
+    model = GeminiModel(llm_model)
 
 # Create the agent
 msp_expert = Agent(

@@ -46,22 +46,21 @@ class EmbeddingService:
             self.client = AsyncOpenAI(api_key=self.api_key)
             self.dimension = 1536 if "3-small" in self.model else 3072
         else:
-            # Gemini - using new google-genai SDK
-            from google import genai
+            # Gemini
+            import google.generativeai as genai
             self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-            model_name = model or os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
+            model_name = model or os.getenv("EMBEDDING_MODEL", "models/gemini-embedding-001")
             
-            # Remove models/ prefix if present (new SDK doesn't need it)
-            if model_name.startswith("models/"):
-                model_name = model_name.replace("models/", "")
+            # Ensure model name has correct prefix
+            if not model_name.startswith(("models/", "tunedModels/")):
+                model_name = f"models/{model_name}"
             
             self.model = model_name
             
             if not self.api_key:
                 raise ValueError("GEMINI_API_KEY or GOOGLE_API_KEY not found in environment")
             
-            # Initialize the new google-genai client
-            self.genai_client = genai.Client(api_key=self.api_key)
+            genai.configure(api_key=self.api_key)
             # gemini-embedding-001 produces 3072-dim vectors, text-embedding-004 produces 768
             self.dimension = 3072 if "gemini-embedding-001" in self.model else 768
     
@@ -95,15 +94,17 @@ class EmbeddingService:
                 )
                 embedding = response.data[0].embedding
             else:
-                # Gemini embeddings using new google-genai SDK
+                # Gemini embeddings
+                import google.generativeai as genai
                 loop = asyncio.get_event_loop()
                 func = partial(
-                    self.genai_client.models.embed_content,
+                    genai.embed_content,
                     model=self.model,
-                    contents=text,
+                    content=text,
+                    task_type=task_type
                 )
                 result = await loop.run_in_executor(None, func)
-                embedding = result.embeddings[0].values
+                embedding = result['embedding']
             
             # Cache the result
             if self._cache:
@@ -146,12 +147,14 @@ class EmbeddingService:
                 )
                 embedding = response.data[0].embedding
             else:
-                # Gemini embeddings using new google-genai SDK
-                result = self.genai_client.models.embed_content(
+                # Gemini embeddings
+                import google.generativeai as genai
+                result = genai.embed_content(
                     model=self.model,
-                    contents=text,
+                    content=text,
+                    task_type=task_type
                 )
-                embedding = result.embeddings[0].values
+                embedding = result['embedding']
             
             # Cache the result
             if self._cache:
