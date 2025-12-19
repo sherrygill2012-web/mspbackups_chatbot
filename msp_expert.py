@@ -149,11 +149,11 @@ elif llm_provider.lower() == "groq":
     model = GroqModel(llm_model)
 else:
     # Gemini - default provider
-    # Uses GOOGLE_API_KEY env var (or GEMINI_API_KEY as fallback)
+    # pydantic-ai's GeminiModel looks for GEMINI_API_KEY
     google_api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
     if google_api_key:
-        # Set GOOGLE_API_KEY for pydantic-ai if only GEMINI_API_KEY is set
-        os.environ["GOOGLE_API_KEY"] = google_api_key
+        # Set GEMINI_API_KEY for pydantic-ai (it doesn't read GOOGLE_API_KEY)
+        os.environ["GEMINI_API_KEY"] = google_api_key
     model = GeminiModel(llm_model)
 
 # Create the agent
