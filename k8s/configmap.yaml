@@ -11,7 +11,7 @@ data:
   # Using Google Gemini for LLM
   # Requires GOOGLE_API_KEY in the sealed secret
   LLM_PROVIDER: "gemini"
-  LLM_MODEL: "gemini-3-flash-preview"
+  LLM_MODEL: "gemini-2.5-flash"
   EMBEDDING_PROVIDER: "gemini"
   EMBEDDING_MODEL: "models/gemini-embedding-001"
   # Redis cache configuration
